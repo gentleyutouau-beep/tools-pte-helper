@@ -2,11 +2,20 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { WFD_SENTENCES } from '@/lib/wfd'
+import {
+  fetchRemoteProgress,
+  loadLocalProgress,
+  mergeProgress,
+  pushRemoteProgress,
+  saveLocalProgress,
+  type ProgressMap,
+} from '@/lib/progressClient'
 
 const LABELS = ['全部', '极高频', '极限预测', '重回', '新题', '降频区']
 const DIFFICULTIES = ['全部', '简单', '普通', '困难']
 const STATUS_FILTERS = ['全部', '不会', '会', '未标记']
 const STORAGE_KEY = 'pte-wfd-status-v1'
+const PROGRESS_SCOPE = 'wfd'
 
 type SentenceStatus = 'known' | 'unknown'
 
@@ -15,23 +24,36 @@ export default function WFDPracticePage() {
   const [label, setLabel] = useState('全部')
   const [difficulty, setDifficulty] = useState('全部')
   const [statusFilter, setStatusFilter] = useState('全部')
-  const [statusMap, setStatusMap] = useState<Record<string, SentenceStatus>>({})
+  const [statusMap, setStatusMap] = useState<ProgressMap>({})
   const [showChinese, setShowChinese] = useState(true)
   const normalizedQuery = query.trim().toLowerCase()
 
   useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(STORAGE_KEY)
-      if (saved) setStatusMap(JSON.parse(saved))
-    } catch {
-      setStatusMap({})
+    const localProgress = loadLocalProgress(STORAGE_KEY)
+    setStatusMap(localProgress)
+
+    async function syncProgress() {
+      try {
+        const remoteProgress = await fetchRemoteProgress(PROGRESS_SCOPE)
+        const merged = mergeProgress(localProgress, remoteProgress)
+        saveLocalProgress(STORAGE_KEY, merged)
+        setStatusMap(merged)
+        await pushRemoteProgress(PROGRESS_SCOPE, merged)
+      } catch (error) {
+        console.warn('Unable to sync WFD progress', error)
+      }
     }
+
+    syncProgress()
   }, [])
 
   const updateStatus = (code: string, status: SentenceStatus) => {
     setStatusMap((current) => {
-      const next = { ...current, [code]: status }
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+      const next = { ...current, [code]: { status, updatedAt: Date.now() } }
+      saveLocalProgress(STORAGE_KEY, next)
+      pushRemoteProgress(PROGRESS_SCOPE, next).catch((error) => {
+        console.warn('Unable to sync WFD progress', error)
+      })
       return next
     })
   }
@@ -45,7 +67,7 @@ export default function WFDPracticePage() {
         item.code.toLowerCase().includes(normalizedQuery)
       const matchesLabel = label === '全部' || item.labels.includes(label)
       const matchesDifficulty = difficulty === '全部' || item.difficulty === difficulty
-      const status = statusMap[item.code]
+      const status = statusMap[item.code]?.status
       const matchesStatus =
         statusFilter === '全部' ||
         (statusFilter === '会' && status === 'known') ||
@@ -60,8 +82,8 @@ export default function WFDPracticePage() {
     return WFD_SENTENCES.reduce(
       (acc, item) => {
         const status = statusMap[item.code]
-        if (status === 'known') acc.known += 1
-        if (status === 'unknown') acc.unknown += 1
+        if (status?.status === 'known') acc.known += 1
+        if (status?.status === 'unknown') acc.unknown += 1
         if (!status) acc.unmarked += 1
         return acc
       },
@@ -152,7 +174,7 @@ export default function WFDPracticePage() {
 
       <section className="space-y-3">
         {sentences.map((item) => {
-          const status = statusMap[item.code]
+          const status = statusMap[item.code]?.status
 
           return (
             <article

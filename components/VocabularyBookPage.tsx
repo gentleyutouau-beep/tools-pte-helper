@@ -4,6 +4,14 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { VocabularyBook, VOCABULARY_BOOKS } from '@/lib/vocabulary'
 import { getVocabularyEntry } from '@/lib/vocabularyDetails'
+import {
+  fetchRemoteProgress,
+  loadLocalProgress,
+  mergeProgress,
+  pushRemoteProgress,
+  saveLocalProgress,
+  type ProgressMap,
+} from '@/lib/progressClient'
 
 interface Props {
   book: VocabularyBook
@@ -15,27 +23,41 @@ type WordStatus = 'known' | 'unknown'
 type FilterStatus = 'all' | WordStatus | 'unmarked'
 
 const STORAGE_KEY = 'pte-vocabulary-status-v1'
+const PROGRESS_SCOPE = 'vocabulary'
 
 export default function VocabularyBookPage({ book, showBackLink = true, showBookTabs = false }: Props) {
   const [query, setQuery] = useState('')
-  const [statusMap, setStatusMap] = useState<Record<string, WordStatus>>({})
+  const [statusMap, setStatusMap] = useState<ProgressMap>({})
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
   const normalizedQuery = query.trim().toLowerCase()
 
   useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(STORAGE_KEY)
-      if (saved) setStatusMap(JSON.parse(saved))
-    } catch {
-      setStatusMap({})
+    const localProgress = loadLocalProgress(STORAGE_KEY)
+    setStatusMap(localProgress)
+
+    async function syncProgress() {
+      try {
+        const remoteProgress = await fetchRemoteProgress(PROGRESS_SCOPE)
+        const merged = mergeProgress(localProgress, remoteProgress)
+        saveLocalProgress(STORAGE_KEY, merged)
+        setStatusMap(merged)
+        await pushRemoteProgress(PROGRESS_SCOPE, merged)
+      } catch (error) {
+        console.warn('Unable to sync vocabulary progress', error)
+      }
     }
+
+    syncProgress()
   }, [])
 
   const updateStatus = (word: string, status: WordStatus) => {
     const key = word.toLowerCase()
     setStatusMap((current) => {
-      const next = { ...current, [key]: status }
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+      const next = { ...current, [key]: { status, updatedAt: Date.now() } }
+      saveLocalProgress(STORAGE_KEY, next)
+      pushRemoteProgress(PROGRESS_SCOPE, next).catch((error) => {
+        console.warn('Unable to sync vocabulary progress', error)
+      })
       return next
     })
   }
@@ -44,7 +66,7 @@ export default function VocabularyBookPage({ book, showBackLink = true, showBook
     return book.words.filter((word) => {
       const wordKey = word.toLowerCase()
       const matchesQuery = !normalizedQuery || wordKey.includes(normalizedQuery)
-      const status = statusMap[wordKey]
+      const status = statusMap[wordKey]?.status
       const matchesStatus =
         filterStatus === 'all' ||
         (filterStatus === 'unmarked' && !status) ||
@@ -58,8 +80,8 @@ export default function VocabularyBookPage({ book, showBackLink = true, showBook
     return book.words.reduce(
       (acc, word) => {
         const status = statusMap[word.toLowerCase()]
-        if (status === 'known') acc.known += 1
-        if (status === 'unknown') acc.unknown += 1
+        if (status?.status === 'known') acc.known += 1
+        if (status?.status === 'unknown') acc.unknown += 1
         if (!status) acc.unmarked += 1
         return acc
       },
@@ -142,7 +164,7 @@ export default function VocabularyBookPage({ book, showBackLink = true, showBook
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {words.map((word, index) => {
           const entry = getVocabularyEntry(word)
-          const status = statusMap[word.toLowerCase()]
+          const status = statusMap[word.toLowerCase()]?.status
           return (
             <article
               key={`${word}-${index}`}
