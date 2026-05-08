@@ -6,6 +6,7 @@ import { VocabularyBook, VOCABULARY_BOOKS } from '@/lib/vocabulary'
 import { getVocabularyEntry } from '@/lib/vocabularyDetails'
 import {
   fetchRemoteProgress,
+  localDiff,
   loadLocalProgress,
   mergeProgress,
   pushRemoteProgress,
@@ -41,7 +42,10 @@ export default function VocabularyBookPage({ book, showBackLink = true, showBook
         const merged = mergeProgress(localProgress, remoteProgress)
         saveLocalProgress(STORAGE_KEY, merged)
         setStatusMap(merged)
-        await pushRemoteProgress(PROGRESS_SCOPE, merged)
+        const diff = localDiff(localProgress, remoteProgress)
+        if (Object.keys(diff).length > 0) {
+          await pushRemoteProgress(PROGRESS_SCOPE, diff)
+        }
       } catch (error) {
         console.warn('Unable to sync vocabulary progress', error)
       }
@@ -52,13 +56,14 @@ export default function VocabularyBookPage({ book, showBackLink = true, showBook
 
   const updateStatus = (word: string, status: WordStatus) => {
     const key = word.toLowerCase()
+    const entry = { status, updatedAt: Date.now() }
     setStatusMap((current) => {
-      const next = { ...current, [key]: { status, updatedAt: Date.now() } }
+      const next = { ...current, [key]: entry }
       saveLocalProgress(STORAGE_KEY, next)
-      pushRemoteProgress(PROGRESS_SCOPE, next).catch((error) => {
-        console.warn('Unable to sync vocabulary progress', error)
-      })
       return next
+    })
+    pushRemoteProgress(PROGRESS_SCOPE, { [key]: entry }).catch((error) => {
+      console.warn('Unable to sync vocabulary progress', error)
     })
   }
 

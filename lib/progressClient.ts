@@ -66,6 +66,18 @@ export function mergeProgress(primary: ProgressMap, secondary: ProgressMap): Pro
   return merged
 }
 
+// Returns only entries in local that are newer than (or absent from) remote.
+export function localDiff(local: ProgressMap, remote: ProgressMap): ProgressMap {
+  const diff: ProgressMap = {}
+  for (const [key, entry] of Object.entries(local)) {
+    const remoteEntry = remote[key]
+    if (!remoteEntry || entry.updatedAt > remoteEntry.updatedAt) {
+      diff[key] = entry
+    }
+  }
+  return diff
+}
+
 export async function fetchRemoteProgress(scope: string): Promise<ProgressMap> {
   const response = await fetch(`/api/progress?scope=${encodeURIComponent(scope)}`, {
     cache: 'no-store',

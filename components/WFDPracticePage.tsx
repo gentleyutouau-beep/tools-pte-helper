@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { WFD_SENTENCES } from '@/lib/wfd'
 import {
   fetchRemoteProgress,
+  localDiff,
   loadLocalProgress,
   mergeProgress,
   pushRemoteProgress,
@@ -38,7 +39,10 @@ export default function WFDPracticePage() {
         const merged = mergeProgress(localProgress, remoteProgress)
         saveLocalProgress(STORAGE_KEY, merged)
         setStatusMap(merged)
-        await pushRemoteProgress(PROGRESS_SCOPE, merged)
+        const diff = localDiff(localProgress, remoteProgress)
+        if (Object.keys(diff).length > 0) {
+          await pushRemoteProgress(PROGRESS_SCOPE, diff)
+        }
       } catch (error) {
         console.warn('Unable to sync WFD progress', error)
       }
@@ -48,13 +52,14 @@ export default function WFDPracticePage() {
   }, [])
 
   const updateStatus = (code: string, status: SentenceStatus) => {
+    const entry = { status, updatedAt: Date.now() }
     setStatusMap((current) => {
-      const next = { ...current, [code]: { status, updatedAt: Date.now() } }
+      const next = { ...current, [code]: entry }
       saveLocalProgress(STORAGE_KEY, next)
-      pushRemoteProgress(PROGRESS_SCOPE, next).catch((error) => {
-        console.warn('Unable to sync WFD progress', error)
-      })
       return next
+    })
+    pushRemoteProgress(PROGRESS_SCOPE, { [code]: entry }).catch((error) => {
+      console.warn('Unable to sync WFD progress', error)
     })
   }
 
