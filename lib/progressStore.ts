@@ -30,24 +30,25 @@ async function ensureSchema() {
   if (initialized) return
 
   await getClient().execute(`
-    CREATE TABLE IF NOT EXISTS progress_statuses (
+    CREATE TABLE IF NOT EXISTS progress_statuses_v2 (
+      sync_id TEXT NOT NULL,
       scope TEXT NOT NULL,
       item_key TEXT NOT NULL,
       status TEXT NOT NULL CHECK (status IN ('known', 'unknown')),
       updated_at INTEGER NOT NULL,
-      PRIMARY KEY (scope, item_key)
+      PRIMARY KEY (sync_id, scope, item_key)
     )
   `)
 
   initialized = true
 }
 
-export async function readProgress(scope: string): Promise<ProgressRecord[]> {
+export async function readProgress(syncId: string, scope: string): Promise<ProgressRecord[]> {
   await ensureSchema()
 
   const result = await getClient().execute({
-    sql: 'SELECT item_key, status, updated_at FROM progress_statuses WHERE scope = ?',
-    args: [scope],
+    sql: 'SELECT item_key, status, updated_at FROM progress_statuses_v2 WHERE sync_id = ? AND scope = ?',
+    args: [syncId, scope],
   })
 
   return result.rows.map((row) => ({
@@ -57,7 +58,7 @@ export async function readProgress(scope: string): Promise<ProgressRecord[]> {
   }))
 }
 
-export async function writeProgress(scope: string, records: ProgressRecord[]) {
+export async function writeProgress(syncId: string, scope: string, records: ProgressRecord[]) {
   await ensureSchema()
 
   const validRecords = records.filter(
@@ -69,20 +70,25 @@ export async function writeProgress(scope: string, records: ProgressRecord[]) {
 
   if (validRecords.length === 0) return
 
-  const db = getClient()
-  await db.batch(
+  await getClient().batch(
     validRecords.map((record) => ({
       sql: `
-        INSERT INTO progress_statuses (scope, item_key, status, updated_at)
-        VALUES (?, ?, ?, ?)
-        ON CONFLICT(scope, item_key) DO UPDATE SET
+        INSERT INTO progress_statuses_v2 (sync_id, scope, item_key, status, updated_at)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(sync_id, scope, item_key) DO UPDATE SET
           status = CASE
-            WHEN excluded.updated_at >= progress_statuses.updated_at THEN excluded.status
-            ELSE progress_statuses.status
+            WHEN excluded.updated_at >= progress_statuses_v2.updated_at THEN excluded.status
+            ELSE progress_statuses_v2.status
           END,
-          updated_at = MAX(progress_statuses.updated_at, excluded.updated_at)
+          updated_at = MAX(progress_statuses_v2.updated_at, excluded.updated_at)
+        WHERE
+          excluded.updated_at > progress_statuses_v2.updated_at OR
+          (
+            excluded.updated_at = progress_statuses_v2.updated_at AND
+            excluded.status <> progress_statuses_v2.status
+          )
       `,
-      args: [scope, record.key, record.status, record.updatedAt],
+      args: [syncId, scope, record.key, record.status, record.updatedAt],
     })),
     'write'
   )

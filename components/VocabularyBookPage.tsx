@@ -1,18 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import ProgressSyncPanel from '@/components/ProgressSyncPanel'
 import { VocabularyBook, VOCABULARY_BOOKS } from '@/lib/vocabulary'
 import { getVocabularyEntry } from '@/lib/vocabularyDetails'
-import {
-  fetchRemoteProgress,
-  localDiff,
-  loadLocalProgress,
-  mergeProgress,
-  pushRemoteProgress,
-  saveLocalProgress,
-  type ProgressMap,
-} from '@/lib/progressClient'
+import { useSyncedProgress } from '@/lib/useSyncedProgress'
 
 interface Props {
   book: VocabularyBook
@@ -28,44 +21,13 @@ const PROGRESS_SCOPE = 'vocabulary'
 
 export default function VocabularyBookPage({ book, showBackLink = true, showBookTabs = false }: Props) {
   const [query, setQuery] = useState('')
-  const [statusMap, setStatusMap] = useState<ProgressMap>({})
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
+  const { statusMap, syncId, updateStatus, useSyncId, createNewSyncId } = useSyncedProgress(
+    STORAGE_KEY,
+    PROGRESS_SCOPE,
+    'vocabulary'
+  )
   const normalizedQuery = query.trim().toLowerCase()
-
-  useEffect(() => {
-    const localProgress = loadLocalProgress(STORAGE_KEY)
-    setStatusMap(localProgress)
-
-    async function syncProgress() {
-      try {
-        const remoteProgress = await fetchRemoteProgress(PROGRESS_SCOPE)
-        const merged = mergeProgress(localProgress, remoteProgress)
-        saveLocalProgress(STORAGE_KEY, merged)
-        setStatusMap(merged)
-        const diff = localDiff(localProgress, remoteProgress)
-        if (Object.keys(diff).length > 0) {
-          await pushRemoteProgress(PROGRESS_SCOPE, diff)
-        }
-      } catch (error) {
-        console.warn('Unable to sync vocabulary progress', error)
-      }
-    }
-
-    syncProgress()
-  }, [])
-
-  const updateStatus = (word: string, status: WordStatus) => {
-    const key = word.toLowerCase()
-    const entry = { status, updatedAt: Date.now() }
-    setStatusMap((current) => {
-      const next = { ...current, [key]: entry }
-      saveLocalProgress(STORAGE_KEY, next)
-      return next
-    })
-    pushRemoteProgress(PROGRESS_SCOPE, { [key]: entry }).catch((error) => {
-      console.warn('Unable to sync vocabulary progress', error)
-    })
-  }
 
   const words = useMemo(() => {
     return book.words.filter((word) => {
@@ -129,6 +91,8 @@ export default function VocabularyBookPage({ book, showBackLink = true, showBook
           ))}
         </section>
       )}
+
+      <ProgressSyncPanel syncId={syncId} onUseSyncId={useSyncId} onCreateNewSyncId={createNewSyncId} />
 
       <section className="mb-6 rounded-xl border border-gray-200 bg-white p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">

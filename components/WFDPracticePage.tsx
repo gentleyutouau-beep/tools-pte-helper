@@ -1,16 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import ProgressSyncPanel from '@/components/ProgressSyncPanel'
 import { WFD_SENTENCES } from '@/lib/wfd'
-import {
-  fetchRemoteProgress,
-  localDiff,
-  loadLocalProgress,
-  mergeProgress,
-  pushRemoteProgress,
-  saveLocalProgress,
-  type ProgressMap,
-} from '@/lib/progressClient'
+import { useSyncedProgress } from '@/lib/useSyncedProgress'
 
 const LABELS = ['全部', '极高频', '极限预测', '重回', '新题', '降频区']
 const DIFFICULTIES = ['全部', '简单', '普通', '困难']
@@ -18,50 +11,18 @@ const STATUS_FILTERS = ['全部', '不会', '会', '未标记']
 const STORAGE_KEY = 'pte-wfd-status-v1'
 const PROGRESS_SCOPE = 'wfd'
 
-type SentenceStatus = 'known' | 'unknown'
-
 export default function WFDPracticePage() {
   const [query, setQuery] = useState('')
   const [label, setLabel] = useState('全部')
   const [difficulty, setDifficulty] = useState('全部')
   const [statusFilter, setStatusFilter] = useState('全部')
-  const [statusMap, setStatusMap] = useState<ProgressMap>({})
   const [showChinese, setShowChinese] = useState(true)
+  const { statusMap, syncId, updateStatus, useSyncId, createNewSyncId } = useSyncedProgress(
+    STORAGE_KEY,
+    PROGRESS_SCOPE,
+    'WFD'
+  )
   const normalizedQuery = query.trim().toLowerCase()
-
-  useEffect(() => {
-    const localProgress = loadLocalProgress(STORAGE_KEY)
-    setStatusMap(localProgress)
-
-    async function syncProgress() {
-      try {
-        const remoteProgress = await fetchRemoteProgress(PROGRESS_SCOPE)
-        const merged = mergeProgress(localProgress, remoteProgress)
-        saveLocalProgress(STORAGE_KEY, merged)
-        setStatusMap(merged)
-        const diff = localDiff(localProgress, remoteProgress)
-        if (Object.keys(diff).length > 0) {
-          await pushRemoteProgress(PROGRESS_SCOPE, diff)
-        }
-      } catch (error) {
-        console.warn('Unable to sync WFD progress', error)
-      }
-    }
-
-    syncProgress()
-  }, [])
-
-  const updateStatus = (code: string, status: SentenceStatus) => {
-    const entry = { status, updatedAt: Date.now() }
-    setStatusMap((current) => {
-      const next = { ...current, [code]: entry }
-      saveLocalProgress(STORAGE_KEY, next)
-      return next
-    })
-    pushRemoteProgress(PROGRESS_SCOPE, { [code]: entry }).catch((error) => {
-      console.warn('Unable to sync WFD progress', error)
-    })
-  }
 
   const sentences = useMemo(() => {
     return WFD_SENTENCES.filter((item) => {
@@ -106,6 +67,8 @@ export default function WFDPracticePage() {
         </div>
         <p className="text-gray-500 text-sm">听写句子，重点训练拼写、单复数、冠词和句子完整度。</p>
       </section>
+
+      <ProgressSyncPanel syncId={syncId} onUseSyncId={useSyncId} onCreateNewSyncId={createNewSyncId} />
 
       <section className="mb-6 rounded-xl border border-gray-200 bg-white p-4">
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(220px,1fr)_auto_auto_auto] lg:items-center">
