@@ -38,7 +38,9 @@ export default function DITypePage() {
               <div key={i} className="flex gap-3 items-start">
                 <span className="text-xs font-semibold text-gray-400 w-36 shrink-0 pt-0.5 leading-relaxed">{part.label}</span>
                 <div className="flex-1">
-                  <p className="text-gray-800 leading-relaxed text-sm">{renderWithSlots(part.template, part.slots)}</p>
+                  <p className={`text-gray-800 leading-relaxed text-sm ${part.strikethrough ? 'line-through decoration-2 decoration-gray-500' : ''}`}>
+                    {renderWithSlots(part.template, part.slots)}
+                  </p>
                   {part.note && <p className="text-xs text-gray-400 mt-0.5 italic">{part.note}</p>}
                 </div>
               </div>
