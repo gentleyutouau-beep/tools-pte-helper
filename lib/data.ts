@@ -731,7 +731,7 @@ export const RTS_TEMPLATE: SimpleTemplate = {
   id: 'rts',
   label: 'RTS 模板',
   parts: [
-    { label: '问候+道歉', text: 'Hi [称呼], sorry to bother you.', slots: ['称呼'] },
+    { label: '开场说明', text: 'Hi [称呼], I would like to discuss an issue we have encountered with [相关事项].', slots: ['称呼', '相关事项'] },
     { label: '复述问题', text: 'Here is the situation. [第一人称复述问题].', slots: ['第一人称复述问题'] },
     { label: '请求/方案', text: 'So I was wondering if you could [请求/解决方案].', slots: ['请求/解决方案'] },
     { label: '礼貌结尾', text: 'Thank you for your understanding. I really appreciate your help.', slots: [] },
