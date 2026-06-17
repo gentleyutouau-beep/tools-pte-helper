@@ -745,6 +745,7 @@ export const RTS_TEMPLATE: SimpleTemplate = {
 // ─── Page Meta (for navigation) ──────────────────────────────────────────────
 
 export const PAGE_META = [
+  { href: '/checkin', label: '打卡', fullLabel: 'PTE Study Check-in', category: 'Tracker', weight: '6-8月', color: 'bg-gray-800' },
   { href: '/we',  label: 'WE',  fullLabel: 'Write Essay',             category: 'Writing',   weight: '31%',    color: 'bg-emerald-500' },
   { href: '/swt', label: 'SWT', fullLabel: 'Summarize Written Text',  category: 'Writing',   weight: '28%+23%', color: 'bg-teal-500' },
   { href: '/sst', label: 'SST', fullLabel: 'Summarize Spoken Text',   category: 'Listening', weight: '18%+10%', color: 'bg-sky-500' },

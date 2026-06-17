@@ -3,7 +3,7 @@ import NavBar from '@/components/NavBar'
 import { PAGE_META } from '@/lib/data'
 import { VOCABULARY_BOOKS } from '@/lib/vocabulary'
 
-const CATEGORY_ORDER = ['Writing', 'Speaking', 'Listening', 'Reading', 'Vocabulary']
+const CATEGORY_ORDER = ['Tracker', 'Writing', 'Speaking', 'Listening', 'Reading', 'Vocabulary']
 
 export default function HomePage() {
   const grouped: Record<string, typeof PAGE_META> = {}
