@@ -1,15 +1,26 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 const PEOPLE = ['Rick', 'Yana'] as const
 
 type Person = typeof PEOPLE[number]
 type Records = Record<string, Record<string, Record<string, string>>>
+type SyncStatus = 'loading' | 'saving' | 'synced' | 'error'
+
+interface ApiCheckInRecord {
+  person: Person
+  dateKey: string
+  columnId: string
+  value: string
+  updatedAt: number
+}
 
 const START_DATE = new Date(Date.UTC(2026, 5, 17))
 const END_DATE = new Date(Date.UTC(2026, 7, 31))
 const STORAGE_KEY = 'pte-checkin-records-v1'
+const MIGRATION_KEY = 'pte-checkin-local-migrated-v1'
+const SYNC_DEBOUNCE_MS = 800
 
 const GROUPS = [
   {
@@ -55,7 +66,7 @@ function buildDates() {
   return dates
 }
 
-function readRecords(): Records {
+function readCachedRecords(): Records {
   if (typeof window === 'undefined') return {}
 
   try {
@@ -64,6 +75,46 @@ function readRecords(): Records {
   } catch {
     return {}
   }
+}
+
+function saveCachedRecords(records: Records) {
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(records))
+}
+
+function recordsFromApi(apiRecords: ApiCheckInRecord[]): Records {
+  const records: Records = {}
+
+  for (const record of apiRecords) {
+    if (!PEOPLE.includes(record.person) || !record.value) continue
+
+    records[record.person] = records[record.person] || {}
+    records[record.person][record.dateKey] = records[record.person][record.dateKey] || {}
+    records[record.person][record.dateKey][record.columnId] = record.value
+  }
+
+  return records
+}
+
+function recordsToApi(records: Records, updatedAt: number): ApiCheckInRecord[] {
+  const apiRecords: ApiCheckInRecord[] = []
+
+  for (const personName of PEOPLE) {
+    const personRecords = records[personName] || {}
+    for (const [dateKey, row] of Object.entries(personRecords)) {
+      for (const [columnId, value] of Object.entries(row)) {
+        if (!value) continue
+        apiRecords.push({
+          person: personName,
+          dateKey,
+          columnId,
+          value,
+          updatedAt,
+        })
+      }
+    }
+  }
+
+  return apiRecords
 }
 
 function getTodayKey() {
@@ -80,31 +131,139 @@ export default function CheckInTable() {
   const todayKey = useMemo(() => getTodayKey(), [])
   const [person, setPerson] = useState<Person>('Rick')
   const [records, setRecords] = useState<Records>({})
-  const [loaded, setLoaded] = useState(false)
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>('loading')
+  const pendingRef = useRef<ApiCheckInRecord[]>([])
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(() => {
-    setRecords(readRecords())
-    setLoaded(true)
+  const pushRecords = useCallback(async (apiRecords: ApiCheckInRecord[]) => {
+    if (apiRecords.length === 0) return
+
+    for (let index = 0; index < apiRecords.length; index += 500) {
+      const response = await fetch('/api/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ records: apiRecords.slice(index, index + 500) }),
+      })
+
+      if (!response.ok) throw new Error('Unable to save check-in records')
+    }
   }, [])
 
+  const flushPending = useCallback(async () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+
+    const pending = pendingRef.current
+    pendingRef.current = []
+    if (pending.length === 0) return
+
+    try {
+      setSyncStatus('saving')
+      await pushRecords(pending)
+      setSyncStatus('synced')
+    } catch (error) {
+      pendingRef.current = [...pending, ...pendingRef.current]
+      setSyncStatus('error')
+      console.warn('Unable to sync check-in records', error)
+    }
+  }, [pushRecords])
+
+  const queueRecord = useCallback(
+    (record: ApiCheckInRecord) => {
+      pendingRef.current = [...pendingRef.current, record]
+      setSyncStatus('saving')
+
+      if (timerRef.current) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(() => {
+        flushPending()
+      }, SYNC_DEBOUNCE_MS)
+    },
+    [flushPending]
+  )
+
   useEffect(() => {
-    if (!loaded) return
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(records))
-  }, [loaded, records])
+    const cachedRecords = readCachedRecords()
+    if (Object.keys(cachedRecords).length > 0) {
+      setRecords(cachedRecords)
+    }
+
+    async function loadRemoteRecords() {
+      try {
+        const response = await fetch('/api/checkin', { cache: 'no-store' })
+        if (!response.ok) throw new Error('Unable to fetch check-in records')
+
+        const payload = (await response.json()) as { records?: ApiCheckInRecord[] }
+        const remoteRecords = recordsFromApi(payload.records || [])
+        setRecords(remoteRecords)
+        saveCachedRecords(remoteRecords)
+        setSyncStatus('synced')
+
+        const shouldMigrate = window.localStorage.getItem(MIGRATION_KEY) !== 'true'
+        if (shouldMigrate) {
+          const legacyRecords = recordsToApi(cachedRecords, Date.now())
+          window.localStorage.setItem(MIGRATION_KEY, 'true')
+
+          if (legacyRecords.length > 0) {
+            setSyncStatus('saving')
+            await pushRecords(legacyRecords)
+
+            const migratedResponse = await fetch('/api/checkin', { cache: 'no-store' })
+            if (migratedResponse.ok) {
+              const migratedPayload = (await migratedResponse.json()) as { records?: ApiCheckInRecord[] }
+              const migratedRecords = recordsFromApi(migratedPayload.records || [])
+              setRecords(migratedRecords)
+              saveCachedRecords(migratedRecords)
+            }
+
+            setSyncStatus('synced')
+          }
+        }
+      } catch (error) {
+        setSyncStatus('error')
+        console.warn('Unable to load check-in records', error)
+      }
+    }
+
+    loadRemoteRecords()
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+      if (pendingRef.current.length > 0) {
+        pushRecords(pendingRef.current).catch((error) => {
+          console.warn('Unable to sync check-in records', error)
+        })
+      }
+    }
+  }, [pushRecords])
 
   const updateCell = (dateKey: string, columnId: string, value: string) => {
     const cleanValue = value.replace(/[^\d]/g, '')
+    const updatedAt = Date.now()
 
-    setRecords(prev => ({
-      ...prev,
-      [person]: {
-        ...(prev[person] || {}),
-        [dateKey]: {
-          ...(prev[person]?.[dateKey] || {}),
-          [columnId]: cleanValue,
+    setRecords(prev => {
+      const next = {
+        ...prev,
+        [person]: {
+          ...(prev[person] || {}),
+          [dateKey]: {
+            ...(prev[person]?.[dateKey] || {}),
+            [columnId]: cleanValue,
+          },
         },
-      },
-    }))
+      }
+      saveCachedRecords(next)
+      return next
+    })
+
+    queueRecord({
+      person,
+      dateKey,
+      columnId,
+      value: cleanValue,
+      updatedAt,
+    })
   }
 
   const personRecords = records[person] || {}
@@ -120,7 +279,15 @@ export default function CheckInTable() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">PTE 打卡表</h1>
-          <p className="mt-2 text-sm text-gray-500">日期到 8 月 31 日，记录会保存在当前浏览器。</p>
+          <p className="mt-2 text-sm text-gray-500">
+            日期到 8 月 31 日，记录会自动同步到数据库。
+            <span className="ml-2 text-gray-400">
+              {syncStatus === 'loading' && '加载中'}
+              {syncStatus === 'saving' && '保存中'}
+              {syncStatus === 'synced' && '已同步'}
+              {syncStatus === 'error' && '同步失败，稍后会重试'}
+            </span>
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
