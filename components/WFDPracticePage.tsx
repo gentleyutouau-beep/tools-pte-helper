@@ -1,7 +1,6 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import ProgressSyncPanel from '@/components/ProgressSyncPanel'
 import { WFD_SENTENCES } from '@/lib/wfd'
 import { useSyncedProgress } from '@/lib/useSyncedProgress'
 
@@ -17,7 +16,7 @@ export default function WFDPracticePage() {
   const [difficulty, setDifficulty] = useState('全部')
   const [statusFilter, setStatusFilter] = useState('全部')
   const [showChinese, setShowChinese] = useState(true)
-  const { statusMap, syncId, updateStatus, useSyncId, createNewSyncId } = useSyncedProgress(
+  const { statusMap, updateStatus } = useSyncedProgress(
     STORAGE_KEY,
     PROGRESS_SCOPE,
     'WFD'
@@ -67,8 +66,6 @@ export default function WFDPracticePage() {
         </div>
         <p className="text-gray-500 text-sm">听写句子，重点训练拼写、单复数、冠词和句子完整度。</p>
       </section>
-
-      <ProgressSyncPanel syncId={syncId} onUseSyncId={useSyncId} onCreateNewSyncId={createNewSyncId} />
 
       <section className="mb-6 rounded-xl border border-gray-200 bg-white p-4">
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(220px,1fr)_auto_auto_auto] lg:items-center">

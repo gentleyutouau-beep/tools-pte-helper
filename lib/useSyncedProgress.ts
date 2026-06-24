@@ -7,11 +7,9 @@ import {
   localDiff,
   loadLocalProgress,
   mergeProgress,
-  newProgressSyncId,
   progressStorageKey,
   pushRemoteProgress,
   saveLocalProgress,
-  saveProgressSyncId,
   type ProgressMap,
   type ProgressStatus,
 } from '@/lib/progressClient'
@@ -23,7 +21,6 @@ function hasRecords(progress: ProgressMap) {
 }
 
 export function useSyncedProgress(baseStorageKey: string, scope: string, label: string) {
-  const [syncId, setSyncIdState] = useState('')
   const [statusMap, setStatusMap] = useState<ProgressMap>({})
   const syncIdRef = useRef('')
   const storageKeyRef = useRef(baseStorageKey)
@@ -101,7 +98,6 @@ export function useSyncedProgress(baseStorageKey: string, scope: string, label: 
 
   useEffect(() => {
     const initialSyncId = getProgressSyncId()
-    setSyncIdState(initialSyncId)
     loadForSyncId(initialSyncId, true)
 
     return () => {
@@ -129,31 +125,8 @@ export function useSyncedProgress(baseStorageKey: string, scope: string, label: 
     [queueRemoteProgress]
   )
 
-  const useSyncId = useCallback(
-    (value: string) => {
-      const nextSyncId = saveProgressSyncId(value)
-      if (!nextSyncId) return false
-
-      pendingRef.current = {}
-      setSyncIdState(nextSyncId)
-      loadForSyncId(nextSyncId, false)
-      return true
-    },
-    [loadForSyncId]
-  )
-
-  const createNewSyncId = useCallback(() => {
-    const nextSyncId = newProgressSyncId()
-    pendingRef.current = {}
-    setSyncIdState(nextSyncId)
-    loadForSyncId(nextSyncId, false)
-  }, [loadForSyncId])
-
   return {
     statusMap,
-    syncId,
     updateStatus,
-    useSyncId,
-    createNewSyncId,
   }
 }

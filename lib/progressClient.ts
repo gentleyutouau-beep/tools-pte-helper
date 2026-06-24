@@ -9,41 +9,10 @@ export type ProgressMap = Record<string, ProgressEntry>
 
 type LegacyProgressMap = Record<string, ProgressStatus | ProgressEntry>
 
-const SYNC_ID_STORAGE_KEY = 'pte-progress-sync-id-v1'
-
-function createSyncId() {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return crypto.randomUUID()
-  }
-
-  return `sync-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`
-}
-
-export function normalizeSyncId(value: string) {
-  return value.trim().replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80)
-}
+const SINGLE_USER_PROGRESS_ID = '979deaa4-378b-4b54-b1ba-b0d20bb1bfb5'
 
 export function getProgressSyncId() {
-  const existing = normalizeSyncId(window.localStorage.getItem(SYNC_ID_STORAGE_KEY) ?? '')
-  if (existing) return existing
-
-  const syncId = createSyncId()
-  window.localStorage.setItem(SYNC_ID_STORAGE_KEY, syncId)
-  return syncId
-}
-
-export function saveProgressSyncId(syncId: string) {
-  const normalized = normalizeSyncId(syncId)
-  if (normalized.length < 8) return null
-
-  window.localStorage.setItem(SYNC_ID_STORAGE_KEY, normalized)
-  return normalized
-}
-
-export function newProgressSyncId() {
-  const syncId = createSyncId()
-  window.localStorage.setItem(SYNC_ID_STORAGE_KEY, syncId)
-  return syncId
+  return SINGLE_USER_PROGRESS_ID
 }
 
 export function progressStorageKey(baseStorageKey: string, syncId: string) {

@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import ProgressSyncPanel from '@/components/ProgressSyncPanel'
 import { VocabularyBook, VOCABULARY_BOOKS } from '@/lib/vocabulary'
 import { getVocabularyEntry } from '@/lib/vocabularyDetails'
 import { useSyncedProgress } from '@/lib/useSyncedProgress'
@@ -22,7 +21,7 @@ const PROGRESS_SCOPE = 'vocabulary'
 export default function VocabularyBookPage({ book, showBackLink = true, showBookTabs = false }: Props) {
   const [query, setQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
-  const { statusMap, syncId, updateStatus, useSyncId, createNewSyncId } = useSyncedProgress(
+  const { statusMap, updateStatus } = useSyncedProgress(
     STORAGE_KEY,
     PROGRESS_SCOPE,
     'vocabulary'
@@ -71,6 +70,12 @@ export default function VocabularyBookPage({ book, showBackLink = true, showBook
             <h1 className="mt-1 text-3xl font-bold text-gray-900">{book.title}</h1>
             <p className="mt-2 text-gray-500">共 {book.words.length} 个词，按原词表顺序整理。</p>
           </div>
+          <Link
+            href={`/vocab/${book.slug}/spelling`}
+            className="inline-flex items-center justify-center rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-teal-800"
+          >
+            开始拼写练习
+          </Link>
         </div>
       </section>
 
@@ -91,8 +96,6 @@ export default function VocabularyBookPage({ book, showBackLink = true, showBook
           ))}
         </section>
       )}
-
-      <ProgressSyncPanel syncId={syncId} onUseSyncId={useSyncId} onCreateNewSyncId={createNewSyncId} />
 
       <section className="mb-6 rounded-xl border border-gray-200 bg-white p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">

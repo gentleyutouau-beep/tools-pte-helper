@@ -1,4 +1,5 @@
 'use client'
+import { Fragment } from 'react'
 import { WE_STRATEGY, ESSAY_TYPE_META, EssayType } from '@/lib/data'
 import { SlotBadge } from './SlotBadge'
 
@@ -38,7 +39,7 @@ export default function StrategyTable() {
         </thead>
         <tbody>
           {WE_STRATEGY.map(section => (
-            <>
+            <Fragment key={section.id}>
               <tr key={section.id} className="bg-gray-50">
                 <td colSpan={7} className="px-3 py-2 font-bold text-gray-700 border-t-2 border-gray-200">
                   {section.title}
@@ -75,7 +76,7 @@ export default function StrategyTable() {
                   </tr>
                 )
               })}
-            </>
+            </Fragment>
           ))}
         </tbody>
       </table>
