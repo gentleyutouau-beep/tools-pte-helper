@@ -20,7 +20,7 @@ const START_DATE = new Date(Date.UTC(2026, 5, 17))
 const END_DATE = new Date(Date.UTC(2026, 7, 31))
 const STORAGE_KEY = 'pte-checkin-records-v1'
 const MIGRATION_KEY = 'pte-checkin-local-migrated-v1'
-const SYNC_DEBOUNCE_MS = 800
+const SYNC_DEBOUNCE_MS = 3000
 
 const GROUPS = [
   {
@@ -132,7 +132,7 @@ export default function CheckInTable() {
   const [person, setPerson] = useState<Person>('Rick')
   const [records, setRecords] = useState<Records>({})
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('loading')
-  const pendingRef = useRef<ApiCheckInRecord[]>([])
+  const pendingRef = useRef<Record<string, ApiCheckInRecord>>({})
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const pushRecords = useCallback(async (apiRecords: ApiCheckInRecord[]) => {
@@ -155,8 +155,8 @@ export default function CheckInTable() {
       timerRef.current = null
     }
 
-    const pending = pendingRef.current
-    pendingRef.current = []
+    const pending = Object.values(pendingRef.current)
+    pendingRef.current = {}
     if (pending.length === 0) return
 
     try {
@@ -164,7 +164,12 @@ export default function CheckInTable() {
       await pushRecords(pending)
       setSyncStatus('synced')
     } catch (error) {
-      pendingRef.current = [...pending, ...pendingRef.current]
+      pendingRef.current = Object.fromEntries(
+        [...pending, ...Object.values(pendingRef.current)].map((record) => [
+          `${record.person}:${record.dateKey}:${record.columnId}`,
+          record,
+        ])
+      )
       setSyncStatus('error')
       console.warn('Unable to sync check-in records', error)
     }
@@ -172,7 +177,7 @@ export default function CheckInTable() {
 
   const queueRecord = useCallback(
     (record: ApiCheckInRecord) => {
-      pendingRef.current = [...pendingRef.current, record]
+      pendingRef.current[`${record.person}:${record.dateKey}:${record.columnId}`] = record
       setSyncStatus('saving')
 
       if (timerRef.current) clearTimeout(timerRef.current)
@@ -230,8 +235,9 @@ export default function CheckInTable() {
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
-      if (pendingRef.current.length > 0) {
-        pushRecords(pendingRef.current).catch((error) => {
+      const pending = Object.values(pendingRef.current)
+      if (pending.length > 0) {
+        pushRecords(pending).catch((error) => {
           console.warn('Unable to sync check-in records', error)
         })
       }

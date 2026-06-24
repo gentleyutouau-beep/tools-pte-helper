@@ -9,7 +9,6 @@ export interface ProgressRecord {
 }
 
 let client: Client | null = null
-let initialized = false
 
 function getClient() {
   const url = process.env.TURSO_DATABASE_URL
@@ -26,26 +25,7 @@ function getClient() {
   return client
 }
 
-async function ensureSchema() {
-  if (initialized) return
-
-  await getClient().execute(`
-    CREATE TABLE IF NOT EXISTS progress_statuses_v2 (
-      sync_id TEXT NOT NULL,
-      scope TEXT NOT NULL,
-      item_key TEXT NOT NULL,
-      status TEXT NOT NULL CHECK (status IN ('known', 'unknown')),
-      updated_at INTEGER NOT NULL,
-      PRIMARY KEY (sync_id, scope, item_key)
-    )
-  `)
-
-  initialized = true
-}
-
 export async function readProgress(syncId: string, scope: string): Promise<ProgressRecord[]> {
-  await ensureSchema()
-
   const result = await getClient().execute({
     sql: 'SELECT item_key, status, updated_at FROM progress_statuses_v2 WHERE sync_id = ? AND scope = ?',
     args: [syncId, scope],
@@ -59,8 +39,6 @@ export async function readProgress(syncId: string, scope: string): Promise<Progr
 }
 
 export async function writeProgress(syncId: string, scope: string, records: ProgressRecord[]) {
-  await ensureSchema()
-
   const validRecords = records.filter(
     (record) =>
       record.key &&

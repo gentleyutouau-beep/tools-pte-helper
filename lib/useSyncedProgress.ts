@@ -14,7 +14,8 @@ import {
   type ProgressStatus,
 } from '@/lib/progressClient'
 
-const SYNC_DEBOUNCE_MS = 1500
+const SYNC_DEBOUNCE_MS = 5000
+const REMOTE_CACHE_TTL_MS = 10 * 60 * 1000
 
 function hasRecords(progress: ProgressMap) {
   return Object.keys(progress).length > 0
@@ -32,6 +33,19 @@ function loadProgressFromOtherLocalIds(baseStorageKey: string, currentStorageKey
   }
 
   return progress
+}
+
+function remoteSyncTimestampKey(storageKey: string) {
+  return `${storageKey}:remote-synced-at`
+}
+
+function isRemoteCacheFresh(storageKey: string) {
+  const syncedAt = Number(window.localStorage.getItem(remoteSyncTimestampKey(storageKey)))
+  return Number.isFinite(syncedAt) && Date.now() - syncedAt < REMOTE_CACHE_TTL_MS
+}
+
+function markRemoteCacheSynced(storageKey: string) {
+  window.localStorage.setItem(remoteSyncTimestampKey(storageKey), String(Date.now()))
 }
 
 export function useSyncedProgress(
@@ -82,6 +96,7 @@ export function useSyncedProgress(
     (nextSyncId: string, migrateLegacyProgress: boolean) => {
       syncIdRef.current = nextSyncId
       storageKeyRef.current = progressStorageKey(baseStorageKey, nextSyncId)
+      let migratedLocalProgress = false
 
       let localProgress = loadLocalProgress(storageKeyRef.current)
       if (migrateLegacyProgress && !hasRecords(localProgress)) {
@@ -89,6 +104,7 @@ export function useSyncedProgress(
         if (hasRecords(legacyProgress)) {
           localProgress = legacyProgress
           saveLocalProgress(storageKeyRef.current, localProgress)
+          migratedLocalProgress = true
         }
       }
 
@@ -97,16 +113,22 @@ export function useSyncedProgress(
         if (hasRecords(otherLocalProgress)) {
           localProgress = mergeProgress(otherLocalProgress, localProgress)
           saveLocalProgress(storageKeyRef.current, localProgress)
+          migratedLocalProgress = true
         }
       }
 
       setStatusMap(localProgress)
+
+      if (!migratedLocalProgress && isRemoteCacheFresh(storageKeyRef.current)) {
+        return
+      }
 
       async function syncRemote() {
         try {
           const remoteProgress = await fetchRemoteProgress(scope, nextSyncId)
           const merged = mergeProgress(localProgress, remoteProgress)
           saveLocalProgress(storageKeyRef.current, merged)
+          markRemoteCacheSynced(storageKeyRef.current)
 
           if (syncIdRef.current === nextSyncId) {
             setStatusMap(merged)

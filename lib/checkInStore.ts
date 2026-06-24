@@ -9,7 +9,6 @@ export interface CheckInRecord {
 }
 
 let client: Client | null = null
-let initialized = false
 
 function getClient() {
   const url = process.env.TURSO_DATABASE_URL
@@ -26,26 +25,7 @@ function getClient() {
   return client
 }
 
-async function ensureSchema() {
-  if (initialized) return
-
-  await getClient().execute(`
-    CREATE TABLE IF NOT EXISTS checkin_records_v1 (
-      person TEXT NOT NULL,
-      date_key TEXT NOT NULL,
-      column_id TEXT NOT NULL,
-      value TEXT NOT NULL,
-      updated_at INTEGER NOT NULL,
-      PRIMARY KEY (person, date_key, column_id)
-    )
-  `)
-
-  initialized = true
-}
-
 export async function readCheckInRecords(): Promise<CheckInRecord[]> {
-  await ensureSchema()
-
   const result = await getClient().execute(`
     SELECT person, date_key, column_id, value, updated_at
     FROM checkin_records_v1
@@ -61,8 +41,6 @@ export async function readCheckInRecords(): Promise<CheckInRecord[]> {
 }
 
 export async function writeCheckInRecords(records: CheckInRecord[]) {
-  await ensureSchema()
-
   const validRecords = records.filter(
     (record) =>
       record.person &&
