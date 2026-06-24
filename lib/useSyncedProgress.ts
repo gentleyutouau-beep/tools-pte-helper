@@ -20,7 +20,26 @@ function hasRecords(progress: ProgressMap) {
   return Object.keys(progress).length > 0
 }
 
-export function useSyncedProgress(baseStorageKey: string, scope: string, label: string) {
+function loadProgressFromOtherLocalIds(baseStorageKey: string, currentStorageKey: string) {
+  let progress: ProgressMap = {}
+  const prefix = `${baseStorageKey}:`
+
+  for (let index = 0; index < window.localStorage.length; index += 1) {
+    const storageKey = window.localStorage.key(index)
+    if (!storageKey || storageKey === currentStorageKey || !storageKey.startsWith(prefix)) continue
+
+    progress = mergeProgress(loadLocalProgress(storageKey), progress)
+  }
+
+  return progress
+}
+
+export function useSyncedProgress(
+  baseStorageKey: string,
+  scope: string,
+  label: string,
+  migrateOtherLocalIds = false
+) {
   const [statusMap, setStatusMap] = useState<ProgressMap>({})
   const syncIdRef = useRef('')
   const storageKeyRef = useRef(baseStorageKey)
@@ -73,6 +92,14 @@ export function useSyncedProgress(baseStorageKey: string, scope: string, label: 
         }
       }
 
+      if (migrateLegacyProgress && migrateOtherLocalIds) {
+        const otherLocalProgress = loadProgressFromOtherLocalIds(baseStorageKey, storageKeyRef.current)
+        if (hasRecords(otherLocalProgress)) {
+          localProgress = mergeProgress(otherLocalProgress, localProgress)
+          saveLocalProgress(storageKeyRef.current, localProgress)
+        }
+      }
+
       setStatusMap(localProgress)
 
       async function syncRemote() {
@@ -108,7 +135,7 @@ export function useSyncedProgress(baseStorageKey: string, scope: string, label: 
         })
       }
     }
-  }, [label, loadForSyncId, scope])
+  }, [label, loadForSyncId, migrateOtherLocalIds, scope])
 
   const updateStatus = useCallback(
     (key: string, status: ProgressStatus) => {

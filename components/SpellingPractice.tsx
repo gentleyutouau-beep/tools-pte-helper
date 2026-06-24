@@ -28,7 +28,8 @@ export default function SpellingPractice({ book }: { book: VocabularyBook }) {
   const { statusMap: practicedMap, updateStatus: updatePracticedStatus } = useSyncedProgress(
     SPELLING_PRACTICE_STORAGE_KEY,
     'spelling-practice',
-    'spelling practice'
+    'spelling practice',
+    true
   )
   const [masteryFilter, setMasteryFilter] = useState<MasteryFilter>('all')
   const [practiceFilter, setPracticeFilter] = useState<PracticeFilter>('all')

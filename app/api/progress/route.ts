@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { readProgress, writeProgress, type ProgressRecord } from '@/lib/progressStore'
 
-const ALLOWED_SCOPES = new Set(['vocabulary', 'wfd'])
+const ALLOWED_SCOPES = new Set(['vocabulary', 'wfd', 'spelling-practice'])
 const MAX_RECORDS_PER_REQUEST = 500
 
 export const dynamic = 'force-dynamic'
