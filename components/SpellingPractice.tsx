@@ -9,7 +9,7 @@ import { useSyncedProgress } from '@/lib/useSyncedProgress'
 type MasteryFilter = 'all' | 'known' | 'unknown'
 type PracticeFilter = 'all' | 'known' | 'unknown' | 'practiced' | 'unpracticed'
 type ExerciseMode = 'dictation' | 'meaning'
-type Feedback = 'correct' | 'incorrect'
+type Feedback = 'correct' | 'incorrect' | 'given-up'
 
 const VOCABULARY_STORAGE_KEY = 'pte-vocabulary-status-v1'
 const SPELLING_PRACTICE_STORAGE_KEY = 'pte-spelling-practice-v1'
@@ -97,7 +97,7 @@ export default function SpellingPractice({ book }: { book: VocabularyBook }) {
   }
 
   const moveToNextQuestion = () => {
-    if (feedback === 'incorrect' && currentWord && !isReview) {
+    if (feedback !== 'correct' && currentWord && !isReview) {
       setReviewQueue((queue) => [...queue, currentWord])
     }
 
@@ -133,6 +133,29 @@ export default function SpellingPractice({ book }: { book: VocabularyBook }) {
     setInput('')
     setFeedback(null)
   }
+
+  const giveUp = () => {
+    if (!currentWord || feedback) return
+
+    updatePracticedStatus(currentWord, 'unknown')
+    setFeedback('given-up')
+    setWrongWords((words) => (words.includes(currentWord) ? words : [...words, currentWord]))
+  }
+
+  const wordDetails = entry && (
+    <div className="mt-3 rounded-lg bg-white/70 p-3 text-gray-800">
+      <p className="font-mono text-base font-semibold">{currentWord}</p>
+      <p className="mt-1 text-sm leading-6">
+        {entry.senses.map((sense, index) => (
+          <span key={`${sense.partOfSpeech}-${sense.translation}`}>
+            {index > 0 && <span className="mx-2 text-gray-300">|</span>}
+            <span className="font-semibold text-gray-500">{sense.partOfSpeech}</span>
+            <span className="mx-1">·</span>{sense.translation}
+          </span>
+        ))}
+      </p>
+    </div>
+  )
 
   if (isComplete) {
     return (
@@ -283,23 +306,38 @@ export default function SpellingPractice({ book }: { book: VocabularyBook }) {
             placeholder="输入完整英文单词"
             className="w-full rounded-lg border border-gray-300 px-4 py-3 text-lg outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:bg-gray-50"
           />
-          {!feedback && <button type="submit" disabled={!input.trim()} className="mt-3 w-full rounded-lg bg-teal-700 px-4 py-3 text-sm font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-gray-300">提交（Enter）</button>}
+          {!feedback && (
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <button type="submit" disabled={!input.trim()} className="flex-1 rounded-lg bg-teal-700 px-4 py-3 text-sm font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-gray-300">提交（Enter）</button>
+              <button type="button" onClick={giveUp} className="rounded-lg border border-rose-300 px-4 py-3 text-sm font-semibold text-rose-800 hover:bg-rose-50">不会，显示答案</button>
+            </div>
+          )}
         </form>
 
         {feedback === 'correct' && (
           <div className="mt-5 rounded-xl bg-emerald-50 p-4">
             <p className="font-semibold text-emerald-800">拼写正确</p>
+            {wordDetails}
             <button type="button" onClick={moveToNextQuestion} className="mt-3 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">下一题</button>
           </div>
         )}
 
         {feedback === 'incorrect' && (
           <div className="mt-5 rounded-xl bg-rose-50 p-4">
-            <p className="font-semibold text-rose-900">正确拼写：<span className="font-mono">{currentWord}</span></p>
+            <p className="font-semibold text-rose-900">拼写错误</p>
+            {wordDetails}
             <div className="mt-3 flex flex-wrap gap-3">
               <button type="button" onClick={tryAgain} className="rounded-lg border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-800 hover:bg-rose-100">再试一次</button>
               <button type="button" onClick={moveToNextQuestion} className="rounded-lg bg-rose-700 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-800">下一题</button>
             </div>
+          </div>
+        )}
+
+        {feedback === 'given-up' && (
+          <div className="mt-5 rounded-xl bg-rose-50 p-4">
+            <p className="font-semibold text-rose-900">已标记为听写不会</p>
+            {wordDetails}
+            <button type="button" onClick={moveToNextQuestion} className="mt-3 rounded-lg bg-rose-700 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-800">下一题</button>
           </div>
         )}
       </section>
