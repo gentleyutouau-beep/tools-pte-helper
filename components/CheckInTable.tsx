@@ -317,89 +317,181 @@ export default function CheckInTable() {
 
   const generateShareImage = () => {
     const width = 1080
-    const height = 1080
+    const height = 1350
     const canvas = document.createElement('canvas')
     canvas.width = width
     canvas.height = height
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    ctx.fillStyle = '#f8fafc'
+    const groupColors: Record<string, { bg: string; text: string; accent: string }> = {
+      Speaking: { bg: '#ecfeff', text: '#0e7490', accent: '#06b6d4' },
+      Reading: { bg: '#eff6ff', text: '#1d4ed8', accent: '#3b82f6' },
+      Writing: { bg: '#f5f3ff', text: '#6d28d9', accent: '#8b5cf6' },
+      Listening: { bg: '#f0fdf4', text: '#047857', accent: '#10b981' },
+    }
+
+    const itemsByGroup = GROUPS.map(group => ({
+      label: group.label,
+      total: groupTotals.find(item => item.label === group.label)?.total || 0,
+      items: todayItems.filter(item => item.group === group.label),
+    }))
+
+    ctx.fillStyle = '#e5e7eb'
     ctx.fillRect(0, 0, width, height)
 
-    const gradient = ctx.createLinearGradient(0, 0, width, 340)
-    gradient.addColorStop(0, '#111827')
+    ctx.shadowColor = 'rgba(15, 23, 42, 0.18)'
+    ctx.shadowBlur = 36
+    ctx.shadowOffsetY = 14
+    ctx.fillStyle = '#ffffff'
+    ctx.beginPath()
+    ctx.roundRect(60, 50, 960, 1250, 44)
+    ctx.fill()
+    ctx.shadowColor = 'transparent'
+    ctx.shadowBlur = 0
+    ctx.shadowOffsetY = 0
+
+    const gradient = ctx.createLinearGradient(60, 50, 1020, 360)
+    gradient.addColorStop(0, '#0f172a')
+    gradient.addColorStop(0.55, '#0f766e')
     gradient.addColorStop(1, '#10b981')
     ctx.fillStyle = gradient
-    ctx.fillRect(0, 0, width, 340)
-
-    ctx.fillStyle = '#ffffff'
-    ctx.font = '700 58px Arial'
-    ctx.fillText('PTE Daily Check-in', 64, 112)
-    ctx.font = '500 28px Arial'
-    ctx.fillText(`${person} · ${formatDateLabel(todayKey)}`, 64, 162)
-
-    ctx.fillStyle = 'rgba(255,255,255,0.18)'
     ctx.beginPath()
-    ctx.roundRect(64, 210, 952, 100, 28)
+    ctx.roundRect(60, 50, 960, 330, 44)
+    ctx.fill()
+
+    ctx.fillStyle = 'rgba(255,255,255,0.14)'
+    ctx.beginPath()
+    ctx.arc(880, 120, 170, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = 'rgba(255,255,255,0.10)'
+    ctx.beginPath()
+    ctx.arc(760, 320, 110, 0, Math.PI * 2)
+    ctx.fill()
+
+    ctx.fillStyle = 'rgba(255,255,255,0.2)'
+    ctx.beginPath()
+    ctx.roundRect(110, 100, 116, 48, 24)
     ctx.fill()
     ctx.fillStyle = '#ffffff'
-    ctx.font = '800 52px Arial'
-    ctx.fillText(`${todayTotal}`, 96, 272)
-    ctx.font = '600 26px Arial'
-    ctx.fillText('questions today', 205, 270)
+    ctx.font = '800 24px Arial'
+    ctx.fillText('PTE', 148, 132)
+    ctx.font = '800 58px Arial'
+    ctx.fillText('Daily Check-in', 110, 220)
+    ctx.font = '600 30px Arial'
+    ctx.fillText(`${person} · ${formatDateLabel(todayKey)}`, 112, 270)
+
+    ctx.fillStyle = '#ffffff'
+    ctx.beginPath()
+    ctx.roundRect(110, 430, 400, 180, 34)
+    ctx.fill()
+    ctx.fillStyle = '#94a3b8'
+    ctx.font = '700 24px Arial'
+    ctx.fillText('TODAY', 144, 484)
+    ctx.fillStyle = '#0f172a'
+    ctx.font = '900 76px Arial'
+    ctx.fillText(String(todayTotal), 144, 570)
+    ctx.fillStyle = '#64748b'
+    ctx.font = '700 24px Arial'
+    ctx.fillText('questions', 278, 566)
+
+    ctx.fillStyle = '#ffffff'
+    ctx.beginPath()
+    ctx.roundRect(550, 430, 360, 180, 34)
+    ctx.fill()
+    ctx.fillStyle = '#94a3b8'
+    ctx.font = '700 24px Arial'
+    ctx.fillText('PRACTICED', 584, 484)
+    ctx.fillStyle = '#0f172a'
+    ctx.font = '900 76px Arial'
+    ctx.fillText(String(todayItems.length), 584, 570)
+    ctx.fillStyle = '#64748b'
+    ctx.font = '700 24px Arial'
+    ctx.fillText('item types', 706, 566)
 
     ctx.fillStyle = '#0f172a'
-    ctx.font = '800 36px Arial'
-    ctx.fillText('Today\'s Practice', 64, 420)
+    ctx.font = '900 38px Arial'
+    ctx.fillText('Today\'s Practice', 110, 700)
 
     if (todayItems.length === 0) {
       ctx.fillStyle = '#64748b'
       ctx.font = '600 30px Arial'
-      ctx.fillText('No records yet today.', 64, 490)
+      ctx.fillText('No records yet today.', 110, 760)
     } else {
-      let x = 64
-      let y = 464
-      ctx.font = '700 28px Arial'
-      for (const item of todayItems) {
-        const text = `${item.label} ${item.count}`
-        const pillWidth = Math.min(270, ctx.measureText(text).width + 48)
-        if (x + pillWidth > 1016) {
-          x = 64
-          y += 72
-        }
-        ctx.fillStyle = '#e0f2fe'
+      let y = 735
+      for (const group of itemsByGroup) {
+        if (group.items.length === 0) continue
+        const colors = groupColors[group.label]
+
+        ctx.fillStyle = '#ffffff'
         ctx.beginPath()
-        ctx.roundRect(x, y, pillWidth, 52, 18)
+        ctx.roundRect(110, y, 860, 116, 28)
         ctx.fill()
-        ctx.fillStyle = '#075985'
-        ctx.fillText(text, x + 24, y + 36)
-        x += pillWidth + 16
+
+        ctx.fillStyle = colors.accent
+        ctx.beginPath()
+        ctx.roundRect(110, y, 12, 116, 8)
+        ctx.fill()
+
+        ctx.fillStyle = '#0f172a'
+        ctx.font = '800 28px Arial'
+        ctx.fillText(group.label, 144, y + 44)
+        ctx.fillStyle = colors.text
+        ctx.font = '900 32px Arial'
+        ctx.fillText(String(group.total), 890, y + 46)
+
+        let x = 144
+        let pillY = y + 66
+        ctx.font = '800 23px Arial'
+        const visibleItems = group.items.slice(0, 4)
+        for (const item of visibleItems) {
+          const text = `${item.label} ${item.count}`
+          const pillWidth = Math.min(190, ctx.measureText(text).width + 34)
+          ctx.fillStyle = colors.bg
+          ctx.beginPath()
+          ctx.roundRect(x, pillY, pillWidth, 34, 14)
+          ctx.fill()
+          ctx.fillStyle = colors.text
+          ctx.fillText(text, x + 17, pillY + 24)
+          x += pillWidth + 12
+        }
+        if (group.items.length > visibleItems.length) {
+          const text = `+${group.items.length - visibleItems.length} more`
+          const pillWidth = ctx.measureText(text).width + 34
+          ctx.fillStyle = '#f1f5f9'
+          ctx.beginPath()
+          ctx.roundRect(x, pillY, pillWidth, 34, 14)
+          ctx.fill()
+          ctx.fillStyle = '#64748b'
+          ctx.fillText(text, x + 17, pillY + 24)
+        }
+
+        y += 138
       }
     }
 
-    ctx.fillStyle = '#0f172a'
-    ctx.font = '800 36px Arial'
-    ctx.fillText('Skill Totals', 64, 760)
+    ctx.fillStyle = '#f8fafc'
+    ctx.beginPath()
+    ctx.roundRect(110, 1180, 860, 70, 24)
+    ctx.fill()
+    ctx.fillStyle = '#64748b'
+    ctx.font = '700 24px Arial'
+    ctx.fillText('Speaking', 144, 1225)
+    ctx.fillText('Reading', 346, 1225)
+    ctx.fillText('Writing', 548, 1225)
+    ctx.fillText('Listening', 744, 1225)
 
     groupTotals.forEach((group, index) => {
-      const x = 64 + (index % 2) * 486
-      const y = 804 + Math.floor(index / 2) * 100
-      ctx.fillStyle = '#ffffff'
-      ctx.beginPath()
-      ctx.roundRect(x, y, 444, 72, 22)
-      ctx.fill()
-      ctx.fillStyle = '#475569'
-      ctx.font = '700 24px Arial'
-      ctx.fillText(group.label, x + 24, y + 44)
-      ctx.fillStyle = '#059669'
-      ctx.font = '800 32px Arial'
-      ctx.fillText(String(group.total), x + 360, y + 46)
+      const x = [244, 446, 648, 880][index]
+      const colors = groupColors[group.label]
+      ctx.fillStyle = colors.text
+      ctx.font = '900 28px Arial'
+      ctx.fillText(String(group.total), x, 1225)
     })
 
     ctx.fillStyle = '#94a3b8'
-    ctx.font = '500 20px Arial'
-    ctx.fillText('Generated by PTE 备考助手', 64, 1016)
+    ctx.font = '700 22px Arial'
+    ctx.fillText('Generated by PTE 备考助手', 110, 1288)
 
     setShareImageUrl(canvas.toDataURL('image/png'))
   }
