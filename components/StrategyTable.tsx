@@ -20,7 +20,7 @@ function renderTemplate(text: string, slots: string[]) {
   return <>{parts}</>
 }
 
-const ESSAY_TYPES: (EssayType | 'all')[] = ['agree', 'pros_cons', 'two_views', 'problem_solution', 'cause_effect']
+const ESSAY_TYPES: EssayType[] = ['agree', 'pros_cons', 'two_views', 'problem_solution', 'cause_effect', 'two_part']
 
 export default function StrategyTable() {
   return (
@@ -41,7 +41,7 @@ export default function StrategyTable() {
           {WE_STRATEGY.map(section => (
             <Fragment key={section.id}>
               <tr key={section.id} className="bg-gray-50">
-                <td colSpan={7} className="px-3 py-2 font-bold text-gray-700 border-t-2 border-gray-200">
+                <td colSpan={8} className="px-3 py-2 font-bold text-gray-700 border-t-2 border-gray-200">
                   {section.title}
                 </td>
               </tr>
@@ -52,7 +52,7 @@ export default function StrategyTable() {
                     <td className="px-3 py-3 font-mono text-gray-400 text-xs whitespace-nowrap">{sent.label}</td>
                     <td className="px-3 py-3 leading-relaxed">{renderTemplate(sent.template, sent.slots)}</td>
                     {isAll ? (
-                      <td colSpan={5} className={`px-3 py-3 ${ESSAY_TYPE_META['all'].bg} ${ESSAY_TYPE_META['all'].text} text-xs rounded`}>
+                      <td colSpan={6} className={`px-3 py-3 ${ESSAY_TYPE_META['all'].bg} ${ESSAY_TYPE_META['all'].text} text-xs rounded`}>
                         <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${ESSAY_TYPE_META['all'].bg} ${ESSAY_TYPE_META['all'].border} border ${ESSAY_TYPE_META['all'].text} mb-1`}>
                           所有题型相同
                         </span>

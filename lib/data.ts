@@ -1,6 +1,6 @@
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type EssayType = 'agree' | 'pros_cons' | 'two_views' | 'problem_solution' | 'cause_effect'
+export type EssayType = 'agree' | 'pros_cons' | 'two_views' | 'problem_solution' | 'cause_effect' | 'two_part'
 
 export interface EssayTypeGuidance {
   type: EssayType | 'all'
@@ -66,6 +66,7 @@ export const ESSAY_TYPE_META: Record<EssayType | 'all', { label: string; color: 
   two_views:        { label: '两种观点',   color: 'purple', bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700' },
   problem_solution: { label: '问题与解决', color: 'amber',  bg: 'bg-amber-50',  border: 'border-amber-200',  text: 'text-amber-700' },
   cause_effect:     { label: '原因与影响', color: 'red',    bg: 'bg-red-50',    border: 'border-red-200',    text: 'text-red-700' },
+  two_part:          { label: '双重问答',   color: 'cyan',   bg: 'bg-cyan-50',   border: 'border-cyan-200',   text: 'text-cyan-700' },
   all:              { label: '所有题型',   color: 'gray',   bg: 'bg-gray-50',   border: 'border-gray-200',   text: 'text-gray-600' },
 }
 
@@ -89,11 +90,12 @@ export const WE_STRATEGY: StrategySection[] = [
         template: 'From my perspective, I firmly believe that [观点句], for the following reasons.',
         slots: ['观点句'],
         guidance: [
-          { type: 'agree',            text: '明确表达同意或不同意，如 "this trend brings more benefits than drawbacks"' },
-          { type: 'pros_cons',        text: '总结正反权衡立场，如 "the advantages outweigh the disadvantages"' },
-          { type: 'two_views',        text: '表明支持其中一种观点，或认为两者均有道理' },
-          { type: 'problem_solution', text: '改为 "I believe the key lies in [解决方向]"，不强调个人立场' },
-          { type: 'cause_effect',     text: '改为 "the root causes and far-reaching effects of this deserve careful analysis"' },
+          { type: 'agree',            text: '明确站队。例："this trend brings more benefits than drawbacks when it is properly managed"' },
+          { type: 'pros_cons',        text: '总结利弊权衡。例："its advantages outweigh its disadvantages in most situations"' },
+          { type: 'two_views',        text: '选一边或折中。例："both views have valid points, but the first view is more practical in modern society"' },
+          { type: 'problem_solution', text: '改成解决导向。例："the key lies in practical solutions such as better regulation and public education"' },
+          { type: 'cause_effect',     text: '改成分析导向。例："the root causes and far-reaching effects of this issue deserve careful analysis"' },
+          { type: 'two_part',         text: '回答两个问题。例："this issue is mainly caused by social and economic factors, and it should be addressed through joint efforts"' },
         ],
       },
       {
@@ -120,6 +122,7 @@ export const WE_STRATEGY: StrategySection[] = [
           { type: 'two_views',        text: '支持观点一的理由，领域围绕该观点展开' },
           { type: 'problem_solution', text: '改为 "The primary challenge posed by [主题词] manifests in [两个领域]"' },
           { type: 'cause_effect',     text: '改为 "The causes of [主题词] can be traced to [两个领域]"' },
+          { type: 'two_part',         text: '回答第一个问题，先写原因、影响或现象的主要方面' },
         ],
       },
       {
@@ -140,6 +143,7 @@ export const WE_STRATEGY: StrategySection[] = [
           { type: 'two_views',        text: '进一步支撑观点一' },
           { type: 'problem_solution', text: '改为 "This challenge has severely impacted [领域]"' },
           { type: 'cause_effect',     text: '改为 "This has significantly affected [领域]，triggering [影响]"' },
+          { type: 'two_part',         text: '补充第一个问题的影响对象，如 students, families, society' },
         ],
       },
       {
@@ -160,6 +164,7 @@ export const WE_STRATEGY: StrategySection[] = [
           { type: 'two_views',        text: '用研究支持己方观点' },
           { type: 'problem_solution', text: '改为 "Experts suggest the solution lies in [措施], especially for [群体]"' },
           { type: 'cause_effect',     text: '改为 "Research indicates the long-term effects include [影响] for [群体]"' },
+          { type: 'two_part',         text: '用研究或常识说明第一个问题为何重要' },
         ],
       },
       {
@@ -172,6 +177,7 @@ export const WE_STRATEGY: StrategySection[] = [
           { type: 'two_views',        text: '小结观点一的合理性' },
           { type: 'problem_solution', text: '改为 "Hence, it is crucial to implement [解决方案] without delay"' },
           { type: 'cause_effect',     text: '改为 "Thus, understanding these causes is the first step to addressing the issue"' },
+          { type: 'two_part',         text: '小结第一个问题，并过渡到第二个问题' },
         ],
       },
     ],
@@ -190,6 +196,7 @@ export const WE_STRATEGY: StrategySection[] = [
           { type: 'two_views',        text: '引入观点二，体现思辨深度' },
           { type: 'problem_solution', text: '改为 "On the other hand, addressing [问题] requires systemic changes"' },
           { type: 'cause_effect',     text: '改为 "The ripple effects of [主题词] are far-reaching and complex"' },
+          { type: 'two_part',         text: '引入第二个问题，通常写解决办法、个人观点或未来影响' },
         ],
       },
       {
@@ -202,6 +209,7 @@ export const WE_STRATEGY: StrategySection[] = [
           { type: 'two_views',        text: '阐述观点二的核心论据' },
           { type: 'problem_solution', text: '详述问题严重性，为下文解决方案铺垫' },
           { type: 'cause_effect',     text: '详述影响，如 social inequality, mental health issues' },
+          { type: 'two_part',         text: '具体回答第二个问题，避免只重复第一段内容' },
         ],
       },
       {
@@ -214,6 +222,7 @@ export const WE_STRATEGY: StrategySection[] = [
           { type: 'two_views',        text: '尝试调和两种观点，或坚守立场' },
           { type: 'problem_solution', text: '核心解决方案句，需具体：policy reform / technological intervention / education' },
           { type: 'cause_effect',     text: '呼吁应对影响，如 "policymakers must act to reverse this trend"' },
+          { type: 'two_part',         text: '给出第二个问题的措施或结论，让两问形成闭环' },
         ],
       },
     ],
@@ -240,6 +249,7 @@ export const WE_STRATEGY: StrategySection[] = [
           { type: 'two_views',        text: '超越两种观点的对立，提出共同行动' },
           { type: 'problem_solution', text: '强调解决方案的执行需要跨界合作' },
           { type: 'cause_effect',     text: '呼吁联合应对根本原因及其影响' },
+          { type: 'two_part',         text: '总结两个问题的答案，避免只总结其中一个' },
         ],
       },
     ],
@@ -396,6 +406,21 @@ export const SWT_TEMPLATES: SimpleTemplate[] = [
       '适合有明显转折的文章',
     ],
     note: '适用于文章有明显正反对比时',
+  },
+  {
+    id: 'swt-4',
+    label: '模板四（综合杂交版）',
+    parts: [
+      { label: 'Structure', text: 'While [S1], [S2] and [S3], but [S4], so this issue remains important.', slots: ['S1', 'S2', 'S3', 'S4'] },
+    ],
+    tips: [
+      'S1 = 背景、让步或文章开头信息（while 从句）',
+      'S2 and S3 = 两个并列核心点',
+      'S4 = 转折、问题、限制或反面发现',
+      'so 后面用固定结论收尾，也可以替换为 so the issue needs further attention',
+      '注意控制字数，S1-S4 都要压缩成短语或短句',
+    ],
+    note: '适用于连接四个核心句子，同时把 while / and / but / so 全用上',
   },
 ]
 

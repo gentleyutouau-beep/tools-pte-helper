@@ -6,7 +6,7 @@ import TemplatePage from '@/components/TemplatePage'
 import MaterialsBank from '@/components/MaterialsBank'
 
 export default function WEPage() {
-  const [tab, setTab] = useState<'strategy' | 'template'>('strategy')
+  const [tab, setTab] = useState<'strategy' | 'template'>('template')
 
   return (
     <>
