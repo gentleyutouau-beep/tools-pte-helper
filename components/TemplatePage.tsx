@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { WE_TEMPLATE, WE_TEMPLATE_PLAIN } from '@/lib/data'
 
-const SLOT_EXAMPLES: Record<string, string[]> = {
+export const SLOT_EXAMPLES: Record<string, string[]> = {
   '主题词': [
     'modern technology',
     'technological development',
@@ -258,7 +258,7 @@ const SLOT_EXAMPLES: Record<string, string[]> = {
 
 const DEFAULT_SLOT = '观点句'
 
-const FIELD_OBJECT_SLOTS = new Set([
+export const FIELD_OBJECT_SLOTS = new Set([
   '两个领域',
   '一个领域（人/机构/社会/经济等）',
   '机构/人名',
@@ -266,7 +266,7 @@ const FIELD_OBJECT_SLOTS = new Set([
   '具体领域',
 ])
 
-const SLOT_BADGE_STYLES: Record<string, { idle: string; active: string; fallback: string; panel: string; hover: string }> = {
+export const SLOT_BADGE_STYLES: Record<string, { idle: string; active: string; fallback: string; panel: string; hover: string }> = {
   '主题词': {
     idle: 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100',
     active: 'bg-emerald-600 text-white border-emerald-600',
@@ -372,7 +372,7 @@ function areSlotsInSameGroup(a: string, b: string) {
   return false
 }
 
-type TopicCategoryId =
+export type TopicCategoryId =
   | 'education'
   | 'technology'
   | 'work'
@@ -382,13 +382,13 @@ type TopicCategoryId =
   | 'environment'
   | 'health'
 
-type TopicCategory = {
+export type TopicCategory = {
   id: TopicCategoryId
   label: string
   topics: string[]
 }
 
-const TOPIC_CATEGORIES: TopicCategory[] = [
+export const TOPIC_CATEGORIES: TopicCategory[] = [
   {
     id: 'education',
     label: 'Education & Learning',
@@ -431,7 +431,7 @@ const TOPIC_CATEGORIES: TopicCategory[] = [
   },
 ]
 
-const CATEGORY_SLOT_EXAMPLES: Record<TopicCategoryId, Partial<Record<string, string[]>>> = {
+export const CATEGORY_SLOT_EXAMPLES: Record<TopicCategoryId, Partial<Record<string, string[]>>> = {
   education: {
     '主题词': [
       'formal education',
@@ -786,7 +786,7 @@ const CATEGORY_SLOT_EXAMPLES: Record<TopicCategoryId, Partial<Record<string, str
   },
 }
 
-const GENERAL_FIELD_OBJECT_EXAMPLES = [
+export const GENERAL_FIELD_OBJECT_EXAMPLES = [
   'education and career development',
   'efficiency and productivity',
   'public safety and social order',
@@ -854,7 +854,7 @@ function getSlotExamples(slot: string, categoryId: TopicCategoryId) {
   return CATEGORY_SLOT_EXAMPLES[categoryId][slot] ?? SLOT_EXAMPLES[slot]
 }
 
-const FIELD_OBJECT_GROUPS = [
+export const FIELD_OBJECT_GROUPS = [
   {
     label: '相关领域',
     examples: [
@@ -909,7 +909,7 @@ const FIELD_OBJECT_GROUPS = [
   },
 ]
 
-const VIEWPOINT_PATTERN_EXAMPLES = [
+export const VIEWPOINT_PATTERN_EXAMPLES = [
   {
     label: '同意/不同意',
     text: 'this trend brings more benefits than drawbacks when it is properly managed',

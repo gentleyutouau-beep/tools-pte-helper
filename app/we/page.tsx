@@ -4,9 +4,11 @@ import NavBar from '@/components/NavBar'
 import StrategyTable from '@/components/StrategyTable'
 import TemplatePage from '@/components/TemplatePage'
 import MaterialsBank from '@/components/MaterialsBank'
+import WEPredictionPage from '@/components/WEPredictionPage'
+import WEMaterialsReviewPage from '@/components/WEMaterialsReviewPage'
 
 export default function WEPage() {
-  const [tab, setTab] = useState<'strategy' | 'template'>('template')
+  const [tab, setTab] = useState<'strategy' | 'template' | 'materials' | 'predictions'>('template')
 
   return (
     <>
@@ -22,7 +24,7 @@ export default function WEPage() {
         </div>
 
         <div className="flex gap-1 mb-6 border-b border-gray-200">
-          {([['strategy', '解题方案'], ['template', '完整模板']] as const).map(([key, label]) => (
+          {([['strategy', '解题方案'], ['template', '完整模板'], ['materials', '背素材'], ['predictions', '预测范文']] as const).map(([key, label]) => (
             <button
               key={key}
               onClick={() => setTab(key)}
@@ -38,10 +40,13 @@ export default function WEPage() {
         </div>
 
         <div className="transition-opacity duration-150">
-          {tab === 'strategy' ? <StrategyTable /> : <TemplatePage />}
+          {tab === 'strategy' && <StrategyTable />}
+          {tab === 'template' && <TemplatePage />}
+          {tab === 'materials' && <WEMaterialsReviewPage />}
+          {tab === 'predictions' && <WEPredictionPage />}
         </div>
 
-        <MaterialsBank />
+        {tab !== 'predictions' && tab !== 'materials' && <MaterialsBank />}
       </main>
     </>
   )
