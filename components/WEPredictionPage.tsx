@@ -741,7 +741,7 @@ const ESSAYS: EssayData[] = [
 
 function Highlight({ type, children }: { type: keyof typeof HIGHLIGHT_STYLE; children: ReactNode }) {
   return (
-    <strong className={`rounded border px-1 font-bold ${HIGHLIGHT_STYLE[type]}`}>
+    <strong className={`rounded border px-1.5 py-0.5 font-bold ${HIGHLIGHT_STYLE[type]}`}>
       {children}
     </strong>
   )
@@ -762,7 +762,7 @@ function wordCount(text: string) {
 
 function EssayBody({ essay }: { essay: EssayData }) {
   return (
-    <div className="space-y-4 text-sm leading-7 text-gray-800">
+    <div className="space-y-5 text-base leading-8 text-gray-800 sm:text-[17px] sm:leading-9">
       <p>
         There is no doubt that <Highlight type="topic">{essay.topic}</Highlight> has become an inseparable part of our lives, and the question of whether <Highlight type="topic">{essay.question}</Highlight> has sparked widespread debate. From my perspective, I firmly believe that <Highlight type="thesis">{essay.thesis}</Highlight>, for the following reasons.
       </p>
@@ -787,17 +787,17 @@ export default function WEPredictionPage() {
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <h2 className="text-lg font-bold text-gray-900">6月 WE 预测题范文</h2>
-        <p className="mt-2 text-sm leading-6 text-gray-500">
+        <h2 className="text-xl font-bold text-gray-900">6月 WE 预测题范文</h2>
+        <p className="mt-2 text-base leading-7 text-gray-500">
           按题目 topic 分类整理，范文沿用当前 WE 四段模板。彩色加粗部分是模板填充内容，整体表达保持普通大学英语水平，字数控制在 250-300 左右。重复题目已合并展示。
         </p>
-        <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
-          <span className="rounded border border-emerald-200 bg-emerald-50 px-2 py-1 text-emerald-800">主题/改写题目</span>
-          <span className="rounded border border-violet-200 bg-violet-50 px-2 py-1 text-violet-800">观点句</span>
-          <span className="rounded border border-sky-200 bg-sky-50 px-2 py-1 text-sky-800">领域/对象</span>
-          <span className="rounded border border-fuchsia-200 bg-fuchsia-50 px-2 py-1 text-fuchsia-800">例子</span>
-          <span className="rounded border border-rose-200 bg-rose-50 px-2 py-1 text-rose-800">问题</span>
-          <span className="rounded border border-orange-200 bg-orange-50 px-2 py-1 text-orange-800">措施</span>
+        <div className="mt-4 flex flex-wrap gap-2 text-sm font-semibold">
+          <span className="rounded border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-emerald-800">主题/改写题目</span>
+          <span className="rounded border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-violet-800">观点句</span>
+          <span className="rounded border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-sky-800">领域/对象</span>
+          <span className="rounded border border-fuchsia-200 bg-fuchsia-50 px-2.5 py-1.5 text-fuchsia-800">例子</span>
+          <span className="rounded border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-rose-800">问题</span>
+          <span className="rounded border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-orange-800">措施</span>
         </div>
       </div>
 
@@ -812,7 +812,7 @@ export default function WEPredictionPage() {
                 key={category}
                 type="button"
                 onClick={() => setActiveCategory(category)}
-                className={`shrink-0 rounded-full border px-4 py-2 text-sm font-bold transition-colors ${
+                className={`shrink-0 rounded-full border px-4 py-2.5 text-base font-bold transition-colors ${
                   active
                     ? 'border-gray-900 bg-gray-900 text-white'
                     : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
@@ -828,20 +828,20 @@ export default function WEPredictionPage() {
 
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-xl font-bold text-gray-900">{activeCategory}</h3>
-          <span className="text-sm font-semibold text-gray-500">{activeEssays.length} 篇</span>
+          <h3 className="text-2xl font-bold text-gray-900">{activeCategory}</h3>
+          <span className="text-base font-semibold text-gray-500">{activeEssays.length} 篇</span>
         </div>
         <div className="space-y-5">
           {activeEssays.map(essay => (
-            <article key={essay.id} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <article key={essay.id} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
               <div className="mb-4 border-b border-gray-100 pb-4">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <h4 className="text-base font-bold text-gray-900">{essay.title}</h4>
-                  <span className="shrink-0 rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-600">
+                  <h4 className="text-xl font-bold text-gray-900">{essay.title}</h4>
+                  <span className="shrink-0 rounded-full bg-gray-100 px-3 py-1 text-sm font-bold text-gray-600">
                     {wordCount(paragraphText(essay))} words
                   </span>
                 </div>
-                <p className="mt-2 text-sm leading-6 text-gray-500">{essay.prompt}</p>
+                <p className="mt-2 text-base leading-7 text-gray-500">{essay.prompt}</p>
               </div>
               <EssayBody essay={essay} />
             </article>
