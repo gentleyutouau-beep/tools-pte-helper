@@ -166,8 +166,25 @@ export default function CheckInTable() {
   const [records, setRecords] = useState<Records>({})
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('loading')
   const [shareImageUrl, setShareImageUrl] = useState<string | null>(null)
+  const tableScrollerRef = useRef<HTMLDivElement | null>(null)
+  const todayRowRef = useRef<HTMLTableRowElement | null>(null)
+  const hasAutoScrolledRef = useRef(false)
   const pendingRef = useRef<Record<string, ApiCheckInRecord>>({})
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const scrollToToday = useCallback((behavior: ScrollBehavior = 'smooth', revealTable = false) => {
+    const scroller = tableScrollerRef.current
+    const todayRow = todayRowRef.current
+    if (!scroller || !todayRow) return
+
+    if (revealTable) {
+      scroller.scrollIntoView({ block: 'start', behavior })
+    }
+
+    const rowTop = todayRow.offsetTop
+    const targetTop = Math.max(0, rowTop - scroller.clientHeight / 2 + todayRow.clientHeight / 2)
+    scroller.scrollTo({ top: targetTop, behavior })
+  }, [])
 
   const pushRecords = useCallback(async (apiRecords: ApiCheckInRecord[]) => {
     if (apiRecords.length === 0) return
@@ -277,6 +294,13 @@ export default function CheckInTable() {
       }
     }
   }, [pushRecords])
+
+  useEffect(() => {
+    if (hasAutoScrolledRef.current || !dates.some(date => date.key === todayKey)) return
+
+    hasAutoScrolledRef.current = true
+    window.requestAnimationFrame(() => scrollToToday('auto', true))
+  }, [dates, scrollToToday, todayKey])
 
   const updateCell = (dateKey: string, columnId: string, value: string) => {
     const cleanValue = value.replace(/[^\d]/g, '')
@@ -541,6 +565,13 @@ export default function CheckInTable() {
           >
             预览今日分享图
           </button>
+          <button
+            type="button"
+            onClick={() => scrollToToday('smooth', true)}
+            className="h-10 rounded-full bg-gray-900 px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-gray-800"
+          >
+            回到今天
+          </button>
         </div>
       </div>
 
@@ -561,28 +592,28 @@ export default function CheckInTable() {
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
+        <div ref={tableScrollerRef} className="max-h-[calc(100vh-210px)] min-h-[520px] scroll-mt-24 overflow-auto">
         <table className="min-w-[1320px] border-collapse text-sm">
           <caption className="sr-only">PTE study check-in table for {person}</caption>
           <thead>
             <tr>
-              <th className="sticky left-0 z-20 w-20 border border-gray-200 bg-slate-200 px-3 py-3"></th>
+              <th className="sticky left-0 top-0 z-40 w-20 border border-gray-200 bg-slate-200 px-3 py-3"></th>
               {GROUPS.map(group => (
                 <th
                   key={group.label}
                   colSpan={group.items.length}
-                  className="border border-slate-300 bg-slate-200 px-3 py-3 text-center text-base font-bold text-slate-900"
+                  className="sticky top-0 z-30 border border-slate-300 bg-slate-200 px-3 py-3 text-center text-base font-bold text-slate-900"
                 >
                   {group.label}
                 </th>
               ))}
             </tr>
             <tr>
-              <th className="sticky left-0 z-20 w-20 border border-gray-200 bg-slate-100 px-3 py-2"></th>
+              <th className="sticky left-0 top-[49px] z-40 w-20 border border-gray-200 bg-slate-100 px-3 py-2"></th>
               {COLUMNS.map(column => (
                 <th
                   key={column.id}
-                  className="w-16 border border-gray-200 bg-slate-100 px-2 py-2 text-center text-sm font-bold text-slate-700"
+                  className="sticky top-[49px] z-30 w-16 border border-gray-200 bg-slate-100 px-2 py-2 text-center text-sm font-bold text-slate-700"
                 >
                   {column.label}
                 </th>
@@ -593,6 +624,7 @@ export default function CheckInTable() {
             {dates.map(date => (
               <tr
                 key={date.key}
+                ref={date.key === todayKey ? todayRowRef : undefined}
                 className={`${date.key === todayKey ? 'bg-emerald-50' : 'odd:bg-white even:bg-gray-50'} hover:bg-amber-50/60`}
               >
                 <th className={`sticky left-0 z-10 w-20 border border-gray-200 px-3 py-2 text-right text-base font-bold ${date.key === todayKey ? 'bg-emerald-100 text-emerald-900' : 'bg-gray-100 text-gray-900'}`}>
